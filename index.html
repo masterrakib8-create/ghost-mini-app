@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ghost Protocol Toolkit</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root { --bg: #0a0e17; --card: #111827; --accent: #00f5d4; --text: #e2e8f0; --muted: #94a3b8; }
+    * { box-sizing: border-box; font-family: 'Courier New', monospace; }
+    body { margin: 0; background: var(--bg); color: var(--text); padding: 14px; }
+    h2 { color: var(--accent); text-align: center; margin: 5px 0 15px; font-size: 1.2rem; letter-spacing: 1px; }
+    .tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 14px; }
+    .tab { background: var(--card); border: 1px solid #1f2937; color: var(--muted); padding: 8px 4px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; text-align: center; }
+    .tab.active { border-color: var(--accent); color: var(--accent); font-weight: bold; }
+    .panel { display: none; background: var(--card); padding: 14px; border-radius: 8px; border: 1px solid #1f2937; }
+    .panel.active { display: block; }
+    input, textarea { width: 100%; background: #06090f; border: 1px solid #334155; color: var(--accent); padding: 10px; border-radius: 6px; margin: 8px 0; }
+    button.btn { width: 100%; background: var(--accent); color: #000; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 5px; }
+    .code-box { background: #06090f; padding: 8px; border-radius: 5px; border-left: 3px solid var(--accent); margin: 8px 0; font-size: 0.8rem; word-break: break-all; }
+    small { color: var(--muted); display: block; margin-top: 6px; }
+  </style>
+</head>
+<body>
+  <h2>⚡ GHOST PROTOCOL TOOLKIT</h2>
+
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('tools', this)">🔐 Tools</div>
+    <div class="tab" onclick="showTab('ghost', this)">👻 GhostNote</div>
+    <div class="tab" onclick="showTab('ctf', this)">🚩 Mini CTF</div>
+    <div class="tab" onclick="showTab('sheets', this)">📜 Cheats</div>
+  </div>
+
+  <!-- 1. Security & Crypto Tools -->
+  <div id="tools" class="panel active">
+    <strong>🔑 Strong Password Generator</strong>
+    <div id="passOut" class="code-box">Click generate below...</div>
+    <button class="btn" onclick="genPass()">Generate 16-Char Password</button>
+    <hr style="border-color:#1f2937; margin:14px 0;">
+    <strong>🧬 Base64 Encoder / Decoder</strong>
+    <textarea id="b64Input" rows="2" placeholder="Enter text or Base64..."></textarea>
+    <button class="btn" onclick="doB64(true)">Encode</button>
+    <button class="btn" style="background:#38bdf8;" onclick="doB64(false)">Decode</button>
+    <div id="b64Out" class="code-box">Output will appear here</div>
+  </div>
+
+  <!-- 2. GhostNote Secret Message -->
+  <div id="ghost" class="panel">
+    <strong>👻 Encrypted Secret Note Link</strong>
+    <small>গোপন মেসেজ লিখে এনক্রিপ্টেড লিংক তৈরি করুন:</small>
+    <textarea id="noteText" rows="3" placeholder="Write your secret message..."></textarea>
+    <button class="btn" onclick="makeNote()">Create Secret Link</button>
+    <div id="noteLink" class="code-box" style="display:none;"></div>
+    <div id="readNoteBox" style="display:none;">
+      <strong>📩 Decrypted Secret Message:</strong>
+      <div id="decodedNote" class="code-box"></div>
+    </div>
+  </div>
+
+  <!-- 3. Mini CTF Challenge -->
+  <div id="ctf" class="panel">
+    <strong>🚩 Level 1: Decode the Signal</strong>
+    <small>নিচের হেক্স কোডটি ডিকোড করে ফ্ল্যাগ সাবমিট করুন:</small>
+    <div class="code-box">47 48 4f 53 54 7b 37 33 33 37 7d</div>
+    <input id="flagInput" placeholder="Format: GHOST{...}" />
+    <button class="btn" onclick="checkFlag()">Submit Flag</button>
+    <div id="flagRes" style="margin-top:8px; font-weight:bold;"></div>
+  </div>
+
+  <!-- 4. Cyber & Dev Cheat-Sheets -->
+  <div id="sheets" class="panel">
+    <strong>🐧 Quick Linux & Nmap Commands</strong>
+    <div class="code-box" onclick="copyText(this)">nmap -sV -sC target.com</div>
+    <div class="code-box" onclick="copyText(this)">chmod +x script.sh && ./script.sh</div>
+    <div class="code-box" onclick="copyText(this)">git status && git add . && git commit -m "update"</div>
+    <small>* যেকোনো কমান্ডে ট্যাপ করলে কপি হয়ে যাবে।</small>
+  </div>
+
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+
+    function showTab(id, el) {
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      el.classList.add('active');
+    }
+
+    function genPass() {
+      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%^&*";
+      let pass = "";
+      for (let i = 0; i < 16; i++) pass += chars[Math.floor(Math.random() * chars.length)];
+      document.getElementById("passOut").innerText = pass;
+      navigator.clipboard?.writeText(pass);
+    }
+
+    function doB64(encode) {
+      const val = document.getElementById("b64Input").value;
+      try {
+        document.getElementById("b64Out").innerText = encode ? btoa(val) : atob(val);
+      } catch {
+        document.getElementById("b64Out").innerText = "Invalid input!";
+      }
+    }
+
+    function makeNote() {
+      const txt = document.getElementById("noteText").value;
+      if (!txt) return;
+      const encoded = btoa(encodeURIComponent(txt));
+      const url = window.location.origin + window.location.pathname + "#secret=" + encoded;
+      const box = document.getElementById("noteLink");
+      box.style.display = "block";
+      box.innerText = url;
+      navigator.clipboard?.writeText(url);
+    }
+
+    if (window.location.hash.startsWith("#secret=")) {
+      const raw = window.location.hash.replace("#secret=", "");
+      try {
+        const msg = decodeURIComponent(atob(raw));
+        showTab('ghost', document.querySelectorAll('.tab')[1]);
+        document.getElementById("readNoteBox").style.display = "block";
+        document.getElementById("decodedNote").innerText = msg;
+        history.replaceState(null, null, ' ');
+      } catch {}
+    }
+
+    function checkFlag() {
+      const val = document.getElementById("flagInput").value.trim();
+      const res = document.getElementById("flagRes");
+      res.innerText = val === "GHOST{7337}" ? "✅ ACCESS GRANTED! Flag Captured!" : "❌ Wrong Flag! Try Hex to ASCII.";
+      res.style.color = val === "GHOST{7337}" ? "#00f5d4" : "#f43f5e";
+    }
+
+    function copyText(el) {
+      navigator.clipboard?.writeText(el.innerText);
+      tg.showAlert("Copied: " + el.innerText);
+    }
+  </script>
+</body>
+</html>
